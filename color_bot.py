@@ -46,12 +46,12 @@ class ShapeDetector:
             shape = "square" if ar >= 0.95 and ar <= 1.05 else "rectangle"
 
         # if the shape is a pentagon, it will have 5 vertices
-        elif len(approx) == 5:
-            shape = "pentagon"
+        #elif len(approx) == 5:
+        #    shape = "pentagon"
 
         # otherwise, we assume the shape is a circle
         else:
-        shape = "circle"
+            shape = "circle"
 
         # return the name of the shape
         return shape
@@ -121,111 +121,150 @@ def init_color_presets():
 # [If we go above threshold.. record for ~5sec and return the frame with the highest _MASK_CNT]:
 # ^(Use this for shape detection)
 if __name__ == "__main__":
-    # [Detect Shape]:
-
-    # load the image and resize it to a smaller factor so that
-    # the shapes can be approximated better
-    image = cv2.imread('shapes_and_colors.png')
-    resized = imutils.resize(image, width=300)
-    ratio = image.shape[0] / float(resized.shape[0])
-
-    '''
     # [Turn calibration on/off]:
     _CALIBRATE_HSV = False
     _CALIBRATE_THRESH = False
+    _CALIBRATE_SHAPE = False
 
-    # [Initialize HSV color values]:
-    COLOR_DICT = init_color_presets()
+    # [Detect color]:
+    if _CALIBRATE_SHAPE == False:
+        # [Initialize HSV color values]:
+        COLOR_DICT = init_color_presets()
 
-    # [Get a random choice from COLOR_DICT]:
-    _color_choice = random.choice(list(COLOR_DICT.keys()))
-    (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
+        # [Get a random choice from COLOR_DICT]:
+        _color_choice = random.choice(list(COLOR_DICT.keys()))
+        (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
 
-    # [Text to Speech on OSX]:
-    text = 'Go and FETCH me something.. {0}!'.format(_color_choice)
-    print(text)
-    os.system('say {0}'.format(text))
+        # [Text to Speech on OSX]:
+        text = 'Go and FETCH me something.. {0}!'.format(_color_choice)
+        print(text)
+        os.system('say {0}'.format(text))
 
-    # [Initialize Calibration Window]:
-    if _CALIBRATE_HSV:
-        calibration_window_name = 'HSV Calibrator'
-        init_calibration_window(calibration_window_name, lower_hsv, upper_hsv)
-
-    # [Initialize video capture source]: (macbook webcam)
-    cap = cv2.VideoCapture(0)
-
-    video_window_name = 'Computer Vision'
-    cv2.namedWindow(video_window_name)
-    cv2.moveWindow(video_window_name, 200,300)
-
-    _ss_cnt = 0
-    while(True):
-        # [Capture frame-by-frame]:
-        ret, frame = cap.read()
-
-        # [Median Blur]:
-        # [Convert BGR to HSV]:
-        nemo = cv2.medianBlur(frame, 5)
-        hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
-
-         # [Threshold the HSV image]:
-        mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
-
-        # [Display the resulting frame]:
-        #cv2.imshow(video_window_name, frame) # raw frame
-        cv2.imshow(video_window_name, mask)
-
-        # [Listen for ESC key]:
-        k = cv2.waitKey(1) & 0xFF
-        if k == 27:
-            break
-
-        # [Check for MATCH]:
-        _MASK_CNT = numpy.sum(mask == 255)
-        _MASK_THRESH = 2000
-
-        if _MASK_CNT > _MASK_THRESH:
-            if _CALIBRATE_THRESH:
-                print('[Correct!]: _MASK_CNT: {0}'.format(_MASK_CNT))
-            else:
-                print('[Correct!]')
-
-            # [Screenshot user playing game / having fun!]:
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
-            _ss_cnt+=1
-
-            print('[Sleeping 3 sec]..')
-            time.sleep(3)
-            #break
-
-            if _CALIBRATE_HSV == False:
-                # [Get a random choice from COLOR_DICT]:
-                _color_choice = random.choice(list(COLOR_DICT.keys()))
-                (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
-
-                # [Text to Speech on OSX]:
-                text = 'Now, Go and FETCH me something.. {0}!'.format(_color_choice)
-                print(text)
-                os.system('say {0}'.format(text))
-
+        # [Initialize Calibration Window]:
         if _CALIBRATE_HSV:
-            # [Get current positions of Upper HSV trackbars]:
-            uh = cv2.getTrackbarPos('UpperH',calibration_window_name)
-            us = cv2.getTrackbarPos('UpperS',calibration_window_name)
-            uv = cv2.getTrackbarPos('UpperV',calibration_window_name)
+            calibration_window_name = 'HSV Calibrator'
+            init_calibration_window(calibration_window_name, lower_hsv, upper_hsv)
 
-            # [Get current positions of Lower HSCV trackbars]:
-            lh = cv2.getTrackbarPos('LowerH',calibration_window_name)
-            ls = cv2.getTrackbarPos('LowerS',calibration_window_name)
-            lv = cv2.getTrackbarPos('LowerV',calibration_window_name)
+        # [Initialize video capture source]: (macbook webcam)
+        cap = cv2.VideoCapture(0)
 
-            # [Set lower/upper HSV to get the current mask]:
-            upper_hsv = numpy.array([uh,us,uv])
-            lower_hsv = numpy.array([lh,ls,lv])
+        video_window_name = 'Computer Vision'
+        cv2.namedWindow(video_window_name)
+        cv2.moveWindow(video_window_name, 200,300)
 
-    # [When everything done, release the capture]:
-    cap.release()
-    cv2.destroyAllWindows()
-    print('[fin.]')
-    '''
+        _ss_cnt = 0
+        while(True):
+            # [Capture frame-by-frame]:
+            ret, frame = cap.read()
+
+            # [Median Blur]:
+            # [Convert BGR to HSV]:
+            nemo = cv2.medianBlur(frame, 5)
+            hsv = cv2.cvtColor(nemo, cv2.COLOR_BGR2HSV)
+
+            # [Threshold the HSV image]:
+            mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+            # [Display the resulting frame]:
+            #cv2.imshow(video_window_name, frame) # raw frame
+            cv2.imshow(video_window_name, mask)
+
+            # [Listen for ESC key]:
+            k = cv2.waitKey(1) & 0xFF
+            if k == 27:
+                break
+
+            # [Check for MATCH]:
+            _MASK_CNT = numpy.sum(mask == 255)
+            _MASK_THRESH = 2000
+
+            if _MASK_CNT > _MASK_THRESH:
+                if _CALIBRATE_THRESH:
+                    print('[Correct!]: _MASK_CNT: {0}'.format(_MASK_CNT))
+                else:
+                    print('[Correct!]')
+
+                # [Screenshot user playing game / having fun!]:
+                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
+                _ss_cnt+=1
+
+                print('[Sleeping 3 sec]..')
+                time.sleep(3)
+                #break
+
+                if _CALIBRATE_HSV == False:
+                    # [Get a random choice from COLOR_DICT]:
+                    _color_choice = random.choice(list(COLOR_DICT.keys()))
+                    (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
+
+                    # [Text to Speech on OSX]:
+                    text = 'Now, Go and FETCH me something.. {0}!'.format(_color_choice)
+                    print(text)
+                    os.system('say {0}'.format(text))
+
+            if _CALIBRATE_HSV:
+                # [Get current positions of Upper HSV trackbars]:
+                uh = cv2.getTrackbarPos('UpperH',calibration_window_name)
+                us = cv2.getTrackbarPos('UpperS',calibration_window_name)
+                uv = cv2.getTrackbarPos('UpperV',calibration_window_name)
+                # [Get current positions of Lower HSCV trackbars]:
+                lh = cv2.getTrackbarPos('LowerH',calibration_window_name)
+                ls = cv2.getTrackbarPos('LowerS',calibration_window_name)
+                lv = cv2.getTrackbarPos('LowerV',calibration_window_name)
+                # [Set lower/upper HSV to get the current mask]:
+                upper_hsv = numpy.array([uh,us,uv])
+                lower_hsv = numpy.array([lh,ls,lv])
+
+        # [When everything done, release the capture]:
+        cap.release()
+        cv2.destroyAllWindows()
+        print('[fin.]')
+
+    # [Detect Shape]:
+    if _CALIBRATE_SHAPE == True:
+        # load the image and resize it to a smaller factor so that the shapes can be approximated better:
+        #image = cv2.imread('shapes_and_colors.png')
+        image = cv2.imread('correct_2.png')
+        resized = imutils.resize(image, width=300)
+        ratio = image.shape[0] / float(resized.shape[0])
+
+        # convert the resized image to grayscale, blur it slightly, and threshold it:
+        #gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+        #blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        #thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+
+        # [Initialize HSV color values]:
+        COLOR_DICT = init_color_presets()
+        (lower_hsv, upper_hsv) = COLOR_DICT['PINK']
+
+        # [Threshold the HSV image]:
+        blurred = cv2.medianBlur(resized, 5)
+        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+        thresh = cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+        # find contours in the thresholded image and initialize the shape detector:
+        cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = imutils.grab_contours(cnts)
+        sd = ShapeDetector()
+
+        # loop over the contours
+        for c in cnts:
+            # compute the center of the contour, then detect the name of the
+            # shape using only the contour
+            M = cv2.moments(c)
+            cX = int((M["m10"] / M["m00"]) * ratio)
+            cY = int((M["m01"] / M["m00"]) * ratio)
+            shape = sd.detect(c)
+
+            # multiply the contour (x, y)-coordinates by the resize ratio,
+            # then draw the contours and the name of the shape on the image
+            c = c.astype("float")
+            c *= ratio
+            c = c.astype("int")
+            cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
+            cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+            # show the output image
+            cv2.imshow("Image", image)
+            cv2.waitKey(0)
