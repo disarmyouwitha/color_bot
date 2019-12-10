@@ -1,7 +1,6 @@
 import os
 import sys
 import cv2
-#import time
 import numpy
 import random
 import imageio
@@ -17,7 +16,6 @@ import imageio
 # https://www.pyimagesearch.com/2016/02/08/opencv-shape-detection/
 
 # [Text-to-Speech]:
-#
 
 def nothing(self, x=''):
     #print('Trackbar value: ' + str(x))
