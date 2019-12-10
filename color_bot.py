@@ -5,7 +5,6 @@ import numpy
 import random
 import imageio
 
-
 # [HSV Calibrator]:
 # https://piofthings.net/blog/opencv-baby-steps-4-building-a-hsv-calibrator
 
@@ -16,6 +15,7 @@ import imageio
 # https://www.pyimagesearch.com/2016/02/08/opencv-shape-detection/
 
 # [Text-to-Speech]:
+# os.system("say Hello World")
 
 def nothing(self, x=''):
     #print('Trackbar value: ' + str(x))
@@ -88,8 +88,11 @@ if __name__ == "__main__":
     # [Get a random choice from COLOR_DICT]:
     _color_choice = random.choice(list(COLOR_DICT.keys()))
     (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
-    #print('Go and FETCH me a {0} ball!'.format(_color_choice))
-    print('Go and FETCH me something.. {0}!'.format(_color_choice))
+
+    # [Text to Speech on OSX]:
+    text = 'Go and FETCH me something.. {0}!'.format(_color_choice)
+    print(text)
+    os.system('say {0}'.format(text))
 
     # [Initialize Calibration Window]:
     if _CALIBRATE_HSV:
@@ -140,8 +143,11 @@ if __name__ == "__main__":
                 # [Get a random choice from COLOR_DICT]:
                 _color_choice = random.choice(list(COLOR_DICT.keys()))
                 (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
-                #print('Now, Go and FETCH me a {0} ball!'.format(_color_choice))
-                print('Now, Go and FETCH me something.. {0}!'.format(_color_choice))
+
+                # [Text to Speech on OSX]:
+                text = 'Now, Go and FETCH me something.. {0}!'.format(_color_choice)
+                print(text)
+                os.system('say {0}'.format(text))
 
         if _CALIBRATE_HSV:
             # [Get current positions of Upper HSV trackbars]:
