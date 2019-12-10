@@ -77,6 +77,8 @@ def init_color_presets():
 
     return _color_dict
 
+
+# [Need to do TTS in a different thread than WHILE loop]:
 if __name__ == "__main__":
     # [Turn calibration on/off]:
     _CALIBRATE_HSV = False
@@ -106,6 +108,7 @@ if __name__ == "__main__":
     cv2.namedWindow(video_window_name)
     cv2.moveWindow(video_window_name, 200,300)
 
+    _ss_cnt = 0
     while(True):
         # [Capture frame-by-frame]:
         ret, frame = cap.read()
@@ -131,12 +134,16 @@ if __name__ == "__main__":
         _MASK_CNT = numpy.sum(mask == 255)
         _MASK_THRESH = 2000
 
-        if _CALIBRATE_THRESH:
-            print('_MASK_CNT({0}): {1}'.format(_color_choice, _MASK_CNT))
-
         if _MASK_CNT > _MASK_THRESH:
-            #print('[Correct!]')
-            print('[Correct!]: _MASK_CNT: {0}'.format(_MASK_CNT))
+            if _CALIBRATE_THRESH:
+                print('[Correct!]: _MASK_CNT: {0}'.format(_MASK_CNT))
+            else:
+                print('[Correct!]')
+
+            # [Screenshot user playing game / having fun!]:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
+            _ss_cnt+=1
             #break
 
             if _CALIBRATE_HSV == False:
