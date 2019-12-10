@@ -1,9 +1,11 @@
 import os
 import sys
 import cv2
+import time
 import numpy
 import random
 import imageio
+import imutils
 
 # [HSV Calibrator]:
 # https://piofthings.net/blog/opencv-baby-steps-4-building-a-hsv-calibrator
@@ -16,6 +18,43 @@ import imageio
 
 # [Text-to-Speech]:
 # os.system("say Hello World")
+
+class ShapeDetector:
+    def __init__(self):
+        pass
+
+    def detect(self, c):
+        # initialize the shape name and approximate the contour
+        shape = "unidentified"
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+
+        # if the shape is a triangle, it will have 3 vertices
+        if len(approx) == 3:
+            shape = "triangle"
+
+        # if the shape has 4 vertices, it is either a square or
+        # a rectangle
+        elif len(approx) == 4:
+            # compute the bounding box of the contour and use the
+            # bounding box to compute the aspect ratio
+            (x, y, w, h) = cv2.boundingRect(approx)
+            ar = w / float(h)
+ 
+            # a square will have an aspect ratio that is approximately
+            # equal to one, otherwise, the shape is a rectangle
+            shape = "square" if ar >= 0.95 and ar <= 1.05 else "rectangle"
+
+        # if the shape is a pentagon, it will have 5 vertices
+        elif len(approx) == 5:
+            shape = "pentagon"
+
+        # otherwise, we assume the shape is a circle
+        else:
+        shape = "circle"
+
+        # return the name of the shape
+        return shape
 
 def nothing(self, x=''):
     #print('Trackbar value: ' + str(x))
@@ -79,7 +118,18 @@ def init_color_presets():
 
 
 # [Need to do TTS in a different thread than WHILE loop]:
+# [If we go above threshold.. record for ~5sec and return the frame with the highest _MASK_CNT]:
+# ^(Use this for shape detection)
 if __name__ == "__main__":
+    # [Detect Shape]:
+
+    # load the image and resize it to a smaller factor so that
+    # the shapes can be approximated better
+    image = cv2.imread('shapes_and_colors.png')
+    resized = imutils.resize(image, width=300)
+    ratio = image.shape[0] / float(resized.shape[0])
+
+    '''
     # [Turn calibration on/off]:
     _CALIBRATE_HSV = False
     _CALIBRATE_THRESH = False
@@ -144,6 +194,9 @@ if __name__ == "__main__":
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
             _ss_cnt+=1
+
+            print('[Sleeping 3 sec]..')
+            time.sleep(3)
             #break
 
             if _CALIBRATE_HSV == False:
@@ -175,3 +228,4 @@ if __name__ == "__main__":
     cap.release()
     cv2.destroyAllWindows()
     print('[fin.]')
+    '''
