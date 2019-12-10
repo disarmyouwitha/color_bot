@@ -225,7 +225,7 @@ if __name__ == "__main__":
     if _CALIBRATE_SHAPE == True:
         # load the image and resize it to a smaller factor so that the shapes can be approximated better:
         #image = cv2.imread('shapes_and_colors.png')
-        image = cv2.imread('correct_2.png')
+        image = cv2.imread('correct.png')
         resized = imutils.resize(image, width=300)
         ratio = image.shape[0] / float(resized.shape[0])
 
