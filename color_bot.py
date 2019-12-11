@@ -6,6 +6,8 @@ import numpy
 import random
 import imageio
 import imutils
+import subprocess
+import shape_detector
 
 # [HSV Calibrator]:
 # https://piofthings.net/blog/opencv-baby-steps-4-building-a-hsv-calibrator
@@ -19,42 +21,46 @@ import imutils
 # [Text-to-Speech]:
 # os.system("say Hello World")
 
-class ShapeDetector:
-    def __init__(self):
-        pass
+def shape_detection(frame=None):
+    # [For testing frame can be set to an image]:
+    if frame is None:
+        frame = cv2.imread('shapes_and_colors.png')
+        #frame = cv2.imread('correct.png')
 
-    def detect(self, c):
-        # initialize the shape name and approximate the contour
-        shape = "unidentified"
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+    # [Load the image and resize it to a smaller factor so that the shapes can be approximated better]:
+    resized = imutils.resize(frame, width=300)
+    ratio = frame.shape[0] / float(resized.shape[0])
 
-        # if the shape is a triangle, it will have 3 vertices
-        if len(approx) == 3:
-            shape = "triangle"
+    # [Convert the resized image to grayscale, blur it slightly, and threshold it]:
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
 
-        # if the shape has 4 vertices, it is either a square or
-        # a rectangle
-        elif len(approx) == 4:
-            # compute the bounding box of the contour and use the
-            # bounding box to compute the aspect ratio
-            (x, y, w, h) = cv2.boundingRect(approx)
-            ar = w / float(h)
- 
-            # a square will have an aspect ratio that is approximately
-            # equal to one, otherwise, the shape is a rectangle
-            shape = "square" if ar >= 0.95 and ar <= 1.05 else "rectangle"
+    # [Find contours in the thresholded image and initialize the shape detector]:
+    cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = imutils.grab_contours(cnts)
+    sd = shape_detector.shape_detector()
 
-        # if the shape is a pentagon, it will have 5 vertices
-        #elif len(approx) == 5:
-        #    shape = "pentagon"
+    # [Loop over the contours]:
+    for c in cnts:
+        # compute the center of the contour, then detect the name of the
+        # shape using only the contour
+        M = cv2.moments(c)
+        cX = int((M["m10"] / M["m00"]) * ratio)
+        cY = int((M["m01"] / M["m00"]) * ratio)
+        shape = sd.detect(c)
 
-        # otherwise, we assume the shape is a circle
-        else:
-            shape = "circle"
+        # multiply the contour (x, y)-coordinates by the resize ratio,
+        # then draw the contours and the name of the shape on the image
+        c = c.astype("float")
+        c *= ratio
+        c = c.astype("int")
+        cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)
+        cv2.putText(frame, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-        # return the name of the shape
-        return shape
+        # show the output image
+        cv2.imshow("Frame", thresh)
+        cv2.waitKey(0)
 
 def nothing(self, x=''):
     #print('Trackbar value: ' + str(x))
@@ -117,33 +123,47 @@ def init_color_presets():
     return _color_dict
 
 
+# [OSX Text-To-Speach]:
+def say(text, BLOCKING=False):
+    print(text)
+    if BLOCKING:
+        p = subprocess.call(['say','{0}'.format(text)])
+    else:
+        p = subprocess.Popen(['say','{0}'.format(text)])
+
+
 # [Need to do TTS in a different thread than WHILE loop]:
 # [If we go above threshold.. record for ~5sec and return the frame with the highest _MASK_CNT]:
 # ^(Use this for shape detection)
 if __name__ == "__main__":
     # [Turn calibration on/off]:
-    _CALIBRATE_HSV = False
-    _CALIBRATE_THRESH = False
-    _CALIBRATE_SHAPE = False
+    _CALIBRATE_SHAPE = True
+    _CALIBRATE_HSV = False # 'YELLOW'
+    _SCREEN_SHOTS = False
 
     # [Detect color]:
     if _CALIBRATE_SHAPE == False:
         # [Initialize HSV color values]:
         COLOR_DICT = init_color_presets()
 
-        # [Get a random choice from COLOR_DICT]:
-        _color_choice = random.choice(list(COLOR_DICT.keys()))
-        (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
-
-        # [Text to Speech on OSX]:
-        text = 'Go and FETCH me something.. {0}!'.format(_color_choice)
-        print(text)
-        os.system('say {0}'.format(text))
+        
 
         # [Initialize Calibration Window]:
-        if _CALIBRATE_HSV:
+        if _CALIBRATE_HSV == False:
+            # [Get a random choice from COLOR_DICT]:
+            _color_choice = random.choice(list(COLOR_DICT.keys()))
+            (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
+
+            # [Text to Speech on OSX]:
+            say('Go and FETCH me something.. {0}!'.format(_color_choice), BLOCKING=True)
+        else:
             calibration_window_name = 'HSV Calibrator'
+            (lower_hsv, upper_hsv) = COLOR_DICT[_CALIBRATE_HSV]
             init_calibration_window(calibration_window_name, lower_hsv, upper_hsv)
+            
+
+            # [Text to Speech on OSX]:
+            say('Go and FETCH me something.. {0}!'.format(_CALIBRATE_HSV), BLOCKING=True)
 
         # [Initialize video capture source]: (macbook webcam)
         cap = cv2.VideoCapture(0)
@@ -173,25 +193,26 @@ if __name__ == "__main__":
             k = cv2.waitKey(1) & 0xFF
             if k == 27:
                 break
-
+            #'''
             # [Check for MATCH]:
             _MASK_CNT = numpy.sum(mask == 255)
-            _MASK_THRESH = 2000
+            _MASK_THRESH = 3000
 
             if _MASK_CNT > _MASK_THRESH:
-                if _CALIBRATE_THRESH:
-                    print('[Correct!]: _MASK_CNT: {0}'.format(_MASK_CNT))
+                if _CALIBRATE_HSV != False: # Testing
+                    print('_MASK_CNT: {0}'.format(_MASK_CNT))
+                    # PRINT NUMBER OF COUNTOURS?
                 else:
-                    print('[Correct!]')
+                    say('Correct!', BLOCKING=True)
 
                 # [Screenshot user playing game / having fun!]:
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
-                _ss_cnt+=1
+                if _SCREEN_SHOTS:
+                    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
+                    _ss_cnt+=1
 
-                print('[Sleeping 3 sec]..')
-                time.sleep(3)
-                #break
+                #print('[Sleeping 3 sec]..')
+                #time.sleep(3)
 
                 if _CALIBRATE_HSV == False:
                     # [Get a random choice from COLOR_DICT]:
@@ -199,11 +220,9 @@ if __name__ == "__main__":
                     (lower_hsv, upper_hsv) = COLOR_DICT[_color_choice]
 
                     # [Text to Speech on OSX]:
-                    text = 'Now, Go and FETCH me something.. {0}!'.format(_color_choice)
-                    print(text)
-                    os.system('say {0}'.format(text))
+                    say('Now, Go and FETCH me something.. {0}!'.format(_color_choice), BLOCKING=True)
 
-            if _CALIBRATE_HSV:
+            if _CALIBRATE_HSV != False:
                 # [Get current positions of Upper HSV trackbars]:
                 uh = cv2.getTrackbarPos('UpperH',calibration_window_name)
                 us = cv2.getTrackbarPos('UpperS',calibration_window_name)
@@ -220,51 +239,8 @@ if __name__ == "__main__":
         cap.release()
         cv2.destroyAllWindows()
         print('[fin.]')
+            #'''
 
     # [Detect Shape]:
     if _CALIBRATE_SHAPE == True:
-        # load the image and resize it to a smaller factor so that the shapes can be approximated better:
-        #image = cv2.imread('shapes_and_colors.png')
-        image = cv2.imread('correct.png')
-        resized = imutils.resize(image, width=300)
-        ratio = image.shape[0] / float(resized.shape[0])
-
-        # convert the resized image to grayscale, blur it slightly, and threshold it:
-        #gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-        #blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        #thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
-
-        # [Initialize HSV color values]:
-        COLOR_DICT = init_color_presets()
-        (lower_hsv, upper_hsv) = COLOR_DICT['PINK']
-
-        # [Threshold the HSV image]:
-        blurred = cv2.medianBlur(resized, 5)
-        hsv = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
-        thresh = cv2.inRange(hsv, lower_hsv, upper_hsv)
-
-        # find contours in the thresholded image and initialize the shape detector:
-        cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        cnts = imutils.grab_contours(cnts)
-        sd = ShapeDetector()
-
-        # loop over the contours
-        for c in cnts:
-            # compute the center of the contour, then detect the name of the
-            # shape using only the contour
-            M = cv2.moments(c)
-            cX = int((M["m10"] / M["m00"]) * ratio)
-            cY = int((M["m01"] / M["m00"]) * ratio)
-            shape = sd.detect(c)
-
-            # multiply the contour (x, y)-coordinates by the resize ratio,
-            # then draw the contours and the name of the shape on the image
-            c = c.astype("float")
-            c *= ratio
-            c = c.astype("int")
-            cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
-            cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-            # show the output image
-            cv2.imshow("Image", image)
-            cv2.waitKey(0)
+        shape_detection()
