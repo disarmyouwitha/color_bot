@@ -21,26 +21,35 @@ import shape_detector
 # [Text-to-Speech]:
 # os.system("say Hello World")
 
-def shape_detection(frame=None):
+def shape_detection(masked_frame=None):
     # [For testing frame can be set to an image]:
-    if frame is None:
+    if masked_frame is None:
         frame = cv2.imread('shapes_and_colors.png')
         #frame = cv2.imread('correct.png')
+    else:
+        frame = masked_frame
 
     # [Load the image and resize it to a smaller factor so that the shapes can be approximated better]:
     resized = imutils.resize(frame, width=300)
     ratio = frame.shape[0] / float(resized.shape[0])
+    # CAN RESIZE HAPPEN AFTER BLUR?
 
-    # [Convert the resized image to grayscale, blur it slightly, and threshold it]:
-    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+    if masked_frame is None:
+        # [Convert the resized image to grayscale, blur it slightly, and threshold it]:
+        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+    else: #FRAME SHOULD BE SENT WITH MASK
+        thresh = frame
 
     # [Find contours in the thresholded image and initialize the shape detector]:
     cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cnts = imutils.grab_contours(cnts)
     sd = shape_detector.shape_detector()
 
+    print('_NUM_CONTOURS: {0}'.format(cnts))
+
+    _cnt = 0
     # [Loop over the contours]:
     for c in cnts:
         # compute the center of the contour, then detect the name of the
@@ -49,17 +58,19 @@ def shape_detection(frame=None):
         cX = int((M["m10"] / M["m00"]) * ratio)
         cY = int((M["m01"] / M["m00"]) * ratio)
         shape = sd.detect(c)
+        print('_SHAPE: {0}'.format(shape))
 
         # multiply the contour (x, y)-coordinates by the resize ratio,
         # then draw the contours and the name of the shape on the image
         c = c.astype("float")
         c *= ratio
         c = c.astype("int")
-        cv2.drawContours(frame, [c], -1, (0, 255, 0), 2)
+        cv2.drawContours(frame, [c], -1, (0, 255, 0), 2) # CHANGE COLOR OF BOUNDING BOX HERE?
         cv2.putText(frame, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+        _cnt += 1
 
         # show the output image
-        cv2.imshow("Frame", thresh)
+        cv2.imshow("Frame", frame)
         cv2.waitKey(0)
 
 def nothing(self, x=''):
@@ -146,8 +157,6 @@ if __name__ == "__main__":
         # [Initialize HSV color values]:
         COLOR_DICT = init_color_presets()
 
-        
-
         # [Initialize Calibration Window]:
         if _CALIBRATE_HSV == False:
             # [Get a random choice from COLOR_DICT]:
@@ -193,11 +202,13 @@ if __name__ == "__main__":
             k = cv2.waitKey(1) & 0xFF
             if k == 27:
                 break
-            #'''
-            # [Check for MATCH]:
+
+            # [Set MATCH Threshold]:
             _MASK_CNT = numpy.sum(mask == 255)
             _MASK_THRESH = 3000
+            #_MASK_MIN_CONTOURS = 3
 
+            # [Check MATCH Conditions]:
             if _MASK_CNT > _MASK_THRESH:
                 if _CALIBRATE_HSV != False: # Testing
                     print('_MASK_CNT: {0}'.format(_MASK_CNT))
@@ -210,6 +221,9 @@ if __name__ == "__main__":
                     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     imageio.imwrite('correct_{0}.png'.format(_ss_cnt), rgb_frame)
                     _ss_cnt+=1
+
+                # [Shape Detection]: (might need to move this up to check countours for correct status later)
+                shape_detection(mask)
 
                 #print('[Sleeping 3 sec]..')
                 #time.sleep(3)
@@ -239,7 +253,6 @@ if __name__ == "__main__":
         cap.release()
         cv2.destroyAllWindows()
         print('[fin.]')
-            #'''
 
     # [Detect Shape]:
     if _CALIBRATE_SHAPE == True:
