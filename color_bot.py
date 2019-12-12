@@ -249,7 +249,7 @@ if __name__ == "__main__":
                     #print('_CORRECT_ELAPSED: {0}'.format(_CORRECT_ELAPSED))
             else:
                 if _CORRECT_START > 0:
-                    print('[Lost Focus]: Try again!')
+                    print('((Lost Focus))')
                     _CORRECT_START = 0
                     _CORRECT_ELAPSED = 0
 
