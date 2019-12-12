@@ -109,12 +109,22 @@ def init_color_presets():
     pink_upper_hsv = numpy.array([204,225,255])
     _pink = (pink_lower_hsv, pink_upper_hsv)
 
+    purple_lower_hsv = numpy.array([128,80,20])
+    purple_upper_hsv = numpy.array([145,255,255])
+    _purple = (purple_lower_hsv, purple_upper_hsv)
+
+    red_lower_hsv = numpy.array([0,80,160])
+    red_upper_hsv = numpy.array([10,255,255])
+    _red = (red_lower_hsv, red_upper_hsv)
+
     # [Create color_array]:
     _color_dict = {}
     _color_dict.update({'BLUE': _blue})
     _color_dict.update({'GREEN': _green})
     _color_dict.update({'YELLOW': _yellow})
     _color_dict.update({'PINK': _pink})
+    _color_dict.update({'PURPLE': _purple})
+    _color_dict.update({'RED': _red})
 
     return _color_dict
 
@@ -130,17 +140,17 @@ def text_to_speech(_say, _text=None, BLOCKING=False):
     else:
         p = subprocess.Popen(['say','{0}'.format(_say)])
 
-
-def threaded_picture(cap):
-    time.sleep(3)
-    print('[Taking Picture]:')
-    ret, frame = cap.read()
-    imageio.imwrite('correct_.png')
-
+_ss_cnt = 0
+def threaded_picture(frame):
+    global _ss_cnt
+    _rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    imageio.imwrite('correct_{0}.png'.format(_ss_cnt), _rgb_frame)
+    _ss_cnt+=1
+    print('[Picture Taken]')
 
 # Def need to thread the screenshot.
 if __name__ == "__main__":
-    _CALIBRATE_HSV = False #'GREEN'
+    _CALIBRATE_HSV = False #'PINK'
     _SCREEN_SHOTS = True
 
     _CORRECT_ELAPSED = 0
@@ -171,7 +181,6 @@ if __name__ == "__main__":
     cv2.namedWindow(video_window_name)
     cv2.moveWindow(video_window_name, 200,300)
 
-    _ss_cnt = 0
     while(True):
         # [Capture frame-by-frame]:
         ret, frame = cap.read()
@@ -214,16 +223,15 @@ if __name__ == "__main__":
                     if _CALIBRATE_HSV == False:
                         text_to_speech('Correct!', 'Correct! ({0})'.format(_shape), BLOCKING=True)
                     else:
-                        text_to_speech('{0}!'.format(_shape), BLOCKING=True)
+                        text_to_speech('{0}!'.format(_shape), BLOCKING=False) #True
 
                     # [Screenshot user playing game / having fun!]: (Send to thread?)
                     if _SCREEN_SHOTS:
-                        _RGB_FRAME = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # global for thread to grab last image after delay?
-                        imageio.imwrite('correct_{0}.png'.format(_ss_cnt), _RGB_FRAME) # ^ (Probably don't need global with _ELAPSED_ logic?)
-                        _ss_cnt+=1
+                        #_rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        #imageio.imwrite('correct_{0}.png'.format(_ss_cnt), _rgb_frame)
 
-                        #thread = Thread(target=threaded_picture, args=(cap,)
-                        #thread.start()
+                        thread = Thread(target=threaded_picture, args=(frame, ))
+                        thread.start()
                         # ^(Definitely need to thread this still)
 
                     #break
