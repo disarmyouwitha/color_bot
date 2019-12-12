@@ -146,7 +146,6 @@ def threaded_picture(frame):
     _rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     imageio.imwrite('correct_{0}.png'.format(_ss_cnt), _rgb_frame)
     _ss_cnt+=1
-    print('[Picture Taken]')
 
 # Def need to thread the screenshot.
 if __name__ == "__main__":
